@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:maps_app/presentation/blocs/blocs.dart';
 import 'package:maps_app/presentation/views/views.dart';
 import 'package:maps_app/presentation/widgets/widgets.dart';
@@ -31,25 +32,39 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocBuilder<LocationBloc, LocationState>(
-        builder: (context, state) {
-          if (state.lastKnowLocation == null) {
+        builder: (context, locationState) {
+          if (locationState.lastKnowLocation == null) {
             return const Center(
               child: Text("Espere por favor..."),
             );
           }
-          return SingleChildScrollView(
-            child: Stack(
-              children: [
-                MapView(initialLocation: state.lastKnowLocation!),
-              ],
-            ),
+          return BlocBuilder<MapBloc, MapState>(
+            builder: (context, mapState) {
+              Map<String, Polyline> polylines = Map.from(mapState.polylines);
+              if (!mapState.showMyRoute) {
+                polylines.removeWhere((key, value) => key == "myRoute");
+              }
+
+              return SingleChildScrollView(
+                child: Stack(
+                  children: [
+                    MapView(
+                      initialLocation: locationState.lastKnowLocation!,
+                      polylines: polylines.values.toSet(),
+                    ),
+                  ],
+                ),
+              );
+            },
           );
         },
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
-      floatingActionButton: Column(
+      floatingActionButton: const Column(
         mainAxisAlignment: MainAxisAlignment.end,
-        children: const [
+        children: [
+          BtnToggleUserRoute(),
+          BtnFollowUser(),
           BtnCurrentLocation(),
         ],
       ),
